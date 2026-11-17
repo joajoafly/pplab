@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>앱 기획 프롬프트 평가기</title>
+  <style>
+    :root {
+      --bg-canvas: #F8FAF4;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F4F8EC;
+      --border: #E2E9D5;
+      --border-soft: #ECF1E2;
+      --ink-primary: #1B2418;
+      --ink-secondary: #4E5A47;
+      --ink-muted: #687560;
+      --orange-accent: #EA580C;
+      --orange-hover: #C2410C;
+      --lime-accent: #65A30D;
+      --lime-dark: #4D7C0F;
+      --amber-bar: #F59E0B;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Plus Jakarta Sans", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg-canvas);
+      color: var(--ink-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .mono {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    header {
+      background: rgba(255, 255, 255, 0.94);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+    }
+    .header-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--ink-primary);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .nav {
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .nav a {
+      color: var(--ink-secondary);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .nav a:hover { color: var(--orange-accent); text-decoration: underline; }
+    main {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 40px 24px 72px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+    .hero {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 8px;
+    }
+    .kicker {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--lime-dark);
+      margin-bottom: 10px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 38px);
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+    }
+    .hero p {
+      margin: 12px auto 0;
+      font-size: 15px;
+      color: var(--ink-secondary);
+    }
+    .card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .card-header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .card-title { margin: 0; font-size: 18px; font-weight: 700; }
+    .card-sub { margin: 4px 0 0; font-size: 13px; color: var(--ink-muted); }
+    textarea {
+      width: 100%;
+      min-height: 190px;
+      padding: 16px;
+      border: 1px solid #D3DEC0;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--ink-primary);
+      background: #FCFDFA;
+      resize: vertical;
+      outline: none;
+    }
+    textarea:focus {
+      border-color: var(--lime-accent);
+      box-shadow: 0 0 0 3px rgba(101, 163, 13, 0.16);
+      background: #FFFFFF;
+    }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .btn-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      border: 1px solid var(--border);
+      background: #FFFFFF;
+      color: var(--ink-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 150ms, border-color 150ms, color 150ms;
+    }
+    .btn:hover { background: var(--bg-subtle); color: var(--ink-primary); }
+    .btn-primary {
+      background: var(--orange-accent);
+      border-color: var(--orange-accent);
+      color: #FFFFFF;
+      padding: 10px 22px;
+      font-size: 14px;
+    }
+    .btn-primary:hover { background: var(--orange-hover); border-color: var(--orange-hover); }
+    .error-msg { font-size: 13px; color: var(--orange-hover); margin-top: 8px; display: none; }
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 28px;
+      align-items: center;
+    }
+    @media (min-width: 900px) {
+      .overview-grid { grid-template-columns: 5fr 7fr; }
+    }
+    .gauge-box {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .bars-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px 28px;
+    }
+    .bar-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 6px;
+    }
+    .track {
+      height: 8px;
+      background: #ECF3DF;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 350ms ease;
+    }
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-soft);
+    }
+    .stat-label { font-size: 12px; color: var(--ink-muted); }
+    .stat-val { font-size: 17px; font-weight: 700; margin-top: 2px; }
+    .criteria-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    @media (min-width: 900px) {
+      .criteria-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .crit-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-soft);
+      margin-bottom: 14px;
+    }
+    .sub-item { margin-top: 12px; }
+    .sub-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    .evidence { font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+    .example-box {
+      margin-top: 14px;
+      padding: 10px 12px;
+      background: var(--bg-subtle);
+      border: 1px solid #DCE7C9;
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--ink-secondary);
+    }
+    .empty-box {
+      text-align: center;
+      padding: 40px 24px;
+      border: 1px dashed #CBD9B5;
+      border-radius: 16px;
+      background: #FFFFFF;
+      color: var(--ink-secondary);
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <a href="#top" class="brand">앱 기획 프롬프트 평가기</a>
+      <nav class="nav" aria-label="주요 섹션">
+        <a href="#input-section">프롬프트 입력</a>
+        <a href="#result-section">점수 요약</a>
+        <a href="#criteria-section">기준별 분석</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="kicker">규칙 기반 문장 구조 분석 · 100점 만점 채점 · 외부 AI 미사용</div>
+      <h1>앱 기획 프롬프트 평가기</h1>
+      <p>작성하신 앱 개발 프롬프트를 입력하시면, 4가지 핵심 기준(역할, 목표, 디자인, 구조 체계화)을 문장 구조 단위로 분석하여 점수와 피드백을 제공합니다.</p>
+    </section>
+
+    <section id="input-section" class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">프롬프트 입력</h2>
+          <p class="card-sub">개발하고자 하는 앱의 역할, 핵심 목표, 디자인 방향, 기능 구조를 자유롭게 적어주세요.</p>
+        </div>
+        <div class="btn-group">
+          <button type="button" class="btn" onclick="loadSample(0)">초안 예시</button>
+          <button type="button" class="btn" onclick="loadSample(1)">보통 예시</button>
+          <button type="button" class="btn" onclick="loadSample(2)">모범 예시</button>
+          <button type="button" class="btn" onclick="clearInput()">초기화</button>
+        </div>
+      </div>
+
+      <textarea id="prompt-input" placeholder="여기에 나만의 앱 기획 프롬프트를 입력해 보세요. (예: 당신은 UX 기획자입니다. 중학생들이 숙제를 놓치지 않도록 도와주는 앱을 만들고 싶어요. 색상은 연두색과 주황색으로 깔끔하게 해주세요.)">너는 10년차 농부야. 한국의 지형과 계절에 맞춘 추천 작물 파종시기와 키우는 방법을 알려주는 앱을 제작하고자 해.
+디자인은 파스텔톤의 친근한 디자인으로 html 웹앱 형식으로 제작할거야
+</textarea>
+      <div id="error-msg" class="error-msg">분석할 프롬프트를 공백 제외 5자 이상 입력해 주세요.</div>
+
+      <div class="toolbar">
+        <div id="live-counter" class="mono" style="font-size:12px;color:var(--ink-muted);">0자 · 0문장</div>
+        <button type="button" class="btn btn-primary" onclick="runEvaluation()">평가 시작하기</button>
+      </div>
+    </section>
+
+    <section id="result-section" aria-live="polite"></section>
+    <section id="criteria-section" class="criteria-grid"></section>
+  </main>
+
+  <script>
+    const SAMPLES = [
+      "할 일 관리 앱을 만들고 싶어요. 매일 해야 할 일을 적고 완료 표시할 수 있으면 좋겠고 디자인은 파스텔 톤으로 깔끔하게 해주세요.",
+      "일상생활에서 종이 영수증을 관리하기가 너무 불편한 1인 가구 사용자를 위해, 카메라로 찍으면 자동으로 가계부에 입력되는 앱을 만들고 싶습니다. 핵심 목표는 지출 관리의 자동화입니다. 디자인은 깔끔한 파스텔 미색 바탕에 포인트 컬러는 소프트 라벤더로 하고, 메인 화면에는 월별 지출 그래프와 최근 영수증 목록이 카드 형태로 보였으면 합니다.",
+      "[역할 및 사용자 대상]\n당신은 시니어 프로덕트 기획자이자 UX 디자이너입니다. 일상생활에서 종이 영수증과 카드 내역을 수기로 정리하기 번거로워 지출 누락을 겪는 1인 가구 직장인을 위해, 촬영 한 번으로 지출을 자동 기록하는 개인 맞춤 가계부 웹앱을 설계하고자 합니다.\n\n[핵심 목표 및 우선순위]\n핵심 목표는 영수증 입력 시간을 기존 대비 80% 이상 단축하고, 월말 예산 초과를 사전에 방지하는 것입니다.\n1. 필수 기능(MVP): 영수증을 촬영하면 날짜·상호·금액을 자동 추출해 식비·교통비 등 카테고리로 분류하고 저장합니다.\n2. 조건 기반 알림: 월간 설정 예산의 80%에 도달하면 상단 배너로 경고 안내를 표시합니다.\n3. 제외 범위: 초기 버전에서는 은행 계좌 실시간 연동과 결제 기능은 제외합니다.\n\n[디자인 및 화면 구성]\n- 색상 테마: 밝은 파스텔 라벤더 바탕에 포인트 컬러는 소프트 세이지와 페리윙클을 사용해 차분하고 모던한 분위기를 유지합니다.\n- 레이아웃 구성: 메인 화면 상단에는 이번 달 총 지출과 잔여 예산 요약 카드를 배치하고, 중앙에는 일별 지출 막대 그래프, 하단에는 최근 영수증 목록 테이블을 배치합니다.\n- 상태 처리: 저장된 영수증이 없는 빈 상태에서는 첫 영수증 등록 버튼을 안내하고, 인식 실패 시 직접 수정할 수 있는 입력 모달을 띄웁니다."
+    ];
+
+    const RULES = {
+      persona: [
+        /(당신은|너는|역할은|역할을|페르소나|관점에서|입장에서|시각으로|자격으로|처럼|로서)/g,
+        /(기획자|프로덕트\s*매니저|PM|UX\s*디자이너|UI\s*디자이너|디자이너|개발자|엔지니어|아키텍트|컨설턴트|전문가|시니어|리서처|분석가|작성자|담당자|에이전트)/g,
+        /(톤으로|말투로|어조로|전문적으로|친절하게|논리적으로|실무자처럼)/g
+      ],
+      targetUser: [
+        /(사용자|유저|고객|이용자|직장인|학생|중학생|고등학생|대학생|친구|프리랜서|자영업자|소상공인|부모|시니어|초보자|입문자|관리자|팀원|환자|반려인|1인\s*가구|가족|누구나|대상으로|타겟|위해)/g,
+        /(사용자가|유저가|고객이|학생이|친구가|관리자가|팀원이|초보자가|직장인이)/g,
+        /(가계부|영수증|일정|할\s*일|투두|메모|노트|건강|식단|운동|습관|학습|공부|단어|독서|여행|쇼핑|커뮤니티|예약|매칭|재고|매출|프로젝트|포트폴리오|일기|금융|자산|번역|문서|음악|게임|퀴즈)/g
+      ],
+      roleContext: [
+        /[가-힣]+(불편해서|불편한|불편함|어려워서|어려움|번거로워|번거롭|귀찮아서|귀찮|부족해서|부족함|힘들어서|복잡해서|헷갈려|놓치|까먹|누락|비효율|문제점|문제가|고민|한계)/g,
+        /[가-힣a-zA-Z0-9\s]{1,12}(앱|어플|서비스|플랫폼|웹앱|웹사이트|시스템|도구|툴|대시보드|솔루션)/g,
+        /(도와주는|해결하는|대신해주는|자동으로|지원하는|맞춤형|전용|만들고\s*싶|만들어|설계하|구축하|개발하|제작하|기획하)/g
+      ],
+      goal: [
+        /(핵심\s*목표|목표는|목적은|지향|달성|핵심\s*가치|기대\s*효과|효과를|성과를|하고자\s*합니다|하는\s*것이\s*목표)/g,
+        /(절약|단축|향상|증가|감소|자동화|최적화|효율화|극대화|최소화|정확도|생산성|유지율|습관화|완성|방지|관리|확인)/g,
+        /(\d+\s*(%|퍼센트|초|분|시간|일|주|개월|단계|가지|개|원|점))/g
+      ],
+      func: [
+        /(입력|작성|등록|추가|촬영|스캔|인식|OCR|추출|변환|분류|태깅|저장|기록|조회|검색|필터|정렬|수정|편집|삭제|복사|공유|내보내기|다운로드|업로드|완료|표시)/g,
+        /(알림|리마인드|푸시|추천|분석|계산|합산|통계|요약|리포트|비교|예측|로그인|회원가입|인증|권한|결제|구독|동기화|백업|연동|캘린더)/g,
+        /([가-힣]+(하면|할\s*때|누르면|클릭하면|선택하면|입력하면|찍으면|완료하면|도달하면|시에는|경우에는)\s*[가-힣a-zA-Z0-9\s]{2,22}(된다|됩니다|합니다|보여줍니다|이동합니다|저장됩니다|입력됩니다|표시|생성|실행|분류))/g
+      ],
+      priority: [
+        /(핵심\s*기능|주요\s*기능|필수\s*기능|기본\s*기능|부가\s*기능|선택\s*기능|MVP|1차|초기\s*버전|우선순위|중심으로|위주로|제외|포함)/g,
+        /(지원해야|제공해야|할\s*수\s*있어야|가능해야|반드시|꼭|필수적으로|최소한|좋겠|으면)/g
+      ],
+      theme: [
+        /(디자인|UI|UX|스타일|분위기|테마|무드|톤|컨셉|미니멀|깔끔한|깔끔하게|모던한|모던하게|심플한|직관적인|부드러운|차분한|따뜻한|차가운|전문적인|세련된|신뢰감|예쁜|귀여운)/g,
+        /(컬러|색상|색깔|바탕|배경|포인트|강조색|주황|오렌지|연두|라임|초록|녹색|그린|파스텔|라벤더|세이지|민트|피치|코랄|아이보리|크림|블루|파랑|네이비|흰색|화이트|블랙|다크|라이트|그레이|회색|미색|명도|대비)/g,
+        /(폰트|서체|글꼴|타이포|여백|간격|라운드|둥근|그림자|테두리|아이콘|일러스트|애니메이션|모션|전환\s*효과)/g
+      ],
+      layout: [
+        /(화면|페이지|뷰|섹션|영역|레이아웃|구조|배치|그리드|컬럼|단|상단|중앙|하단|좌측|우측|사이드바|헤더|푸터|내비게이션|네비게이션|메뉴)/g,
+        /(메인|홈|대시보드|상세|목록|리스트|카드|테이블|표|그래프|차트|원형|막대|달력|캘린더|입력창|텍스트박스|버튼|탭|모달|팝업|토스트|배너|프로필|설정|검색창|드롭다운|체크박스)/g,
+        /(모바일|데스크톱|웹|PC|태블릿|반응형|앱\s*화면|가로|세로)/g
+      ],
+      interaction: [
+        /(첫\s*화면|시작\s*화면|온보딩|진입|이동|전환|스크롤|스와이프|드래그|호버|클릭|터치|탭하면|누르면|열리고|닫히고|펼쳐|띄웁니다)/g,
+        /(로딩|대기|빈\s*상태|데이터가\s*없을|없는\s*빈|오류|에러|실패|성공|완료|피드백|안내\s*문구|유효성|검증|확인\s*창|미리보기)/g
+      ],
+      connectors: [
+        /(따라서|그러므로|그래서|이를\s*통해|이로써|결과적으로|예를\s*들어|예:|예시:|또한|그리고|더불어|뿐만\s*아니라|반면|하지만|그러나|특히|우선|먼저|다음으로|마지막으로|구체적으로|요약하면|즉,|왜냐하면|기\s*때문에|하기\s*위해|하도록)/g
+      ]
+    };
+
+    function collect(text, regexList) {
+      const set = new Set();
+      let hits = 0;
+      regexList.forEach((rx) => {
+        const m = text.match(rx);
+        if (m && m.length > 0) {
+          hits += 1;
+          m.forEach((item) => {
+            const c = item.trim().replace(/\s+/g, ' ');
+            if (c.length >= 2) set.add(c);
+          });
+        }
+      });
+      return { matches: Array.from(set), hits };
+    }
+
+    function clamp(v, min, max) { return Math.max(min, Math.min(max, Math.round(v))); }
+
+    function splitSentences(text) {
+      const lines = text.split(/\n+/).map((s) => s.trim()).filter(Boolean);
+      const out = [];
+      lines.forEach((line) => {
+        const parts = line.split(/(?<=[.!?])\s+|(?<=[다요음함임]\.)\s*/g).map((s) => s.trim()).filter((s) => s.length >= 2);
+        if (parts.length === 0 && line.length >= 2) out.push(line);
+        else out.push(...parts);
+      });
+      return out;
+    }
+
+    function escapeText(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function analyze(raw) {
+      const text = raw.trim();
+      const sentences = splitSentences(text);
+      const lines = text.split(/\n+/).map((l) => l.trim()).filter(Boolean);
+      const charsNoSpace = text.replace(/\s+/g, '').length;
+      const avgLen = sentences.length ? Math.round(charsNoSpace / sentences.length) : 0;
+      const listMatches = text.match(/(^|\n)\s*([-*•●▪▶]|\d+[.)]|[①-⑮]|첫째|둘째|셋째)\s+/g) || [];
+      const headerMatches = text.match(/(^|\n)\s*(#{1,4}\s+|\[[^\]]{1,20}\]|[가-힣a-zA-Z0-9\s]{1,18}:(\s|$))/g) || [];
+      const condMatches = text.match(/([가-힣]+(하면|할\s*때|누르면|클릭하면|선택하면|입력하면|찍으면|도달하면|시에는|경우에는))/g) || [];
+      const connRes = collect(text, RULES.connectors);
+
+      const pRes = collect(text, RULES.persona);
+      const tuRes = collect(text, RULES.targetUser);
+      const rcRes = collect(text, RULES.roleContext);
+      const sPersona = clamp(5 + pRes.hits * 1.1 + Math.min(1.2, pRes.matches.length * 0.4), 5, 9);
+      const sTargetUser = clamp(5 + tuRes.hits * 0.85 + Math.min(1.0, tuRes.matches.length * 0.35), 5, 8);
+      const sRoleCtx = clamp(5 + rcRes.hits * 0.85 + Math.min(1.0, rcRes.matches.length * 0.35), 5, 8);
+
+      const gRes = collect(text, RULES.goal);
+      const fRes = collect(text, RULES.func);
+      const prRes = collect(text, RULES.priority);
+      const sGoal = clamp(5 + gRes.hits * 1.1 + Math.min(1.2, gRes.matches.length * 0.4), 5, 9);
+      const sFunc = clamp(6 + fRes.hits * 1.0 + Math.min(1.4, fRes.matches.length * 0.4), 6, 10);
+      const sPrio = clamp(4 + prRes.hits * 0.8 + Math.min(0.6, prRes.matches.length * 0.3), 4, 6);
+
+      const tRes = collect(text, RULES.theme);
+      const lRes = collect(text, RULES.layout);
+      const iRes = collect(text, RULES.interaction);
+      const sTheme = clamp(5 + tRes.hits * 1.1 + Math.min(1.2, tRes.matches.length * 0.4), 5, 9);
+      const sLayout = clamp(5 + lRes.hits * 1.1 + Math.min(1.2, lRes.matches.length * 0.4), 5, 9);
+      const sInter = clamp(5 + iRes.hits * 0.85 + Math.min(0.6, iRes.matches.length * 0.35), 5, 7);
+
+      let sSeg = 4;
+      if (charsNoSpace >= 25) sSeg += 1;
+      if (sentences.length >= 2 || charsNoSpace >= 80) sSeg += 1;
+      if (sentences.length >= 4 && avgLen >= 10 && avgLen <= 95) sSeg += 1;
+      sSeg = clamp(sSeg, 4, 7);
+
+      let sFmt = 5;
+      if (lines.length >= 2) sFmt += 1;
+      if (listMatches.length >= 2) sFmt += 1;
+      if (headerMatches.length >= 1) sFmt += 1;
+      if (lines.length >= 4 || headerMatches.length >= 2 || (text.includes('(') && text.includes(')'))) sFmt += 1;
+      sFmt = clamp(sFmt, 5, 9);
+
+      const completed = sentences.filter((s) => /([다요음함임]\.?|[.!?]$|\)$)/.test(s.trim())).length;
+      const compRatio = sentences.length ? completed / sentences.length : 0;
+      let sLog = 6;
+      if (connRes.matches.length >= 1) sLog += 1;
+      if (connRes.matches.length >= 2 || condMatches.length >= 1) sLog += 1;
+      if (completionRatioCheck(compRatio, sentences.length)) sLog += 1;
+      sLog = clamp(sLog, 6, 9);
+
+      const criteria = [
+        {
+          title: '역할', eng: 'Role & Persona', score: sPersona + sTargetUser + sRoleCtx, max: 25,
+          subs: [
+            { label: '기획·수행자 역할 부여', score: sPersona, max: 9, ev: pRes.matches.slice(0, 5) },
+            { label: '대상 사용자 페르소나 정의', score: sTargetUser, max: 8, ev: tuRes.matches.slice(0, 5) },
+            { label: '문제 맥락 및 솔루션 역할', score: sRoleCtx, max: 8, ev: rcRes.matches.slice(0, 5) }
+          ],
+          example: '당신은 친절한 앱 기획자입니다. 시간 관리가 어려운 중학생이 쉽게 숙제를 챙길 수 있는 일정 관리 앱을 만들고 싶습니다.'
+        },
+        {
+          title: '목표', eng: 'Goals & Features', score: sGoal + sFunc + sPrio, max: 25,
+          subs: [
+            { label: '명시적 목표 및 기대효과', score: sGoal, max: 9, ev: gRes.matches.slice(0, 5) },
+            { label: '기능 동사 및 조건-결과 흐름', score: sFunc, max: 10, ev: fRes.matches.slice(0, 5) },
+            { label: '핵심 범위 및 우선순위', score: sPrio, max: 6, ev: prRes.matches.slice(0, 5) }
+          ],
+          example: '핵심 목표는 하루 할 일을 1분 안에 기록하는 것입니다. 필수 기능으로 할 일을 입력하고 완료 버튼을 누르면 체크 표시가 됩니다.'
+        },
+        {
+          title: '디자인', eng: 'Design & UI/UX', score: sTheme + sLayout + sInter, max: 25,
+          subs: [
+            { label: '시각 테마 및 색상/톤 명세', score: sTheme, max: 9, ev: tRes.matches.slice(0, 5) },
+            { label: '화면 구성 및 UI 컴포넌트', score: sLayout, max: 9, ev: lRes.matches.slice(0, 5) },
+            { label: '사용자 흐름 및 예외 상태', score: sInter, max: 7, ev: iRes.matches.slice(0, 5) }
+          ],
+          example: '깔끔한 흰색 바탕에 연두색과 주황색을 포인트로 쓰고, 상단에는 오늘 할 일 요약 카드, 아래에는 목록을 배치해 주세요.'
+        },
+        {
+          title: '구조 체계화', eng: 'Prompt Architecture', score: sSeg + sFmt + sLog, max: 25,
+          subs: [
+            { label: '문장 분리 및 정보 밀도', score: sSeg, max: 7, ev: [sentences.length + '개 문장', '평균 ' + avgLen + '자'] },
+            { label: '계층 서식 및 항목 구조화', score: sFmt, max: 9, ev: ['줄바꿈 ' + lines.length + '단락', '목록 ' + listMatches.length + '개', '헤더 ' + headerMatches.length + '개'] },
+            { label: '논리 연결어 및 문장 완결성', score: sLog, max: 9, ev: connRes.matches.slice(0, 4).concat(['종결률 ' + Math.round(compRatio * 100) + '%']) }
+          ],
+          example: '[역할] ... / [목표] 1. 기록하기: ... / [디자인] - 색상: 주황색과 연두색 조합'
+        }
+      ];
+
+      const total = Math.max(60, Math.min(100, criteria.reduce((a, c) => a + c.score, 0)));
+
+      return {
+        total,
+        criteria,
+        stats: {
+          charsNoSpace,
+          sentenceCount: sentences.length,
+          structCount: listMatches.length + headerMatches.length,
+          logicCount: connRes.matches.length + condMatches.length
+        }
+      };
+    }
+
+    function completionRatioCheck(ratio, count) {
+      return ratio >= 0.7 && count >= 2;
+    }
+
+    function updateCounter() {
+      const val = document.getElementById('prompt-input').value;
+      const chars = val.replace(/\s+/g, '').length;
+      const sents = splitSentences(val.trim()).length;
+      document.getElementById('live-counter').textContent = chars.toLocaleString() + '자 · ' + sents + '문장';
+    }
+
+    function renderEmpty() {
+      document.getElementById('result-section').innerHTML = `
+        <div class="empty-box">
+          <strong style="display:block;font-size:17px;color:var(--ink-primary);margin-bottom:6px;">평가 결과가 여기에 표시됩니다</strong>
+          위 입력창에 만들고 싶은 앱 내용을 적고 &ldquo;평가 시작하기&rdquo;를 누르거나, 상단 예시 버튼을 눌러 4대 기준 점수를 확인해 보세요.
+        </div>`;
+      document.getElementById('criteria-section').innerHTML = '';
+    }
+
+    function loadSample(idx) {
+      document.getElementById('prompt-input').value = SAMPLES[idx];
+      updateCounter();
+      runEvaluation();
+    }
+
+    function clearInput() {
+      document.getElementById('prompt-input').value = '';
+      document.getElementById('error-msg').style.display = 'none';
+      updateCounter();
+      renderEmpty();
+    }
+
+    function runEvaluation() {
+      const raw = document.getElementById('prompt-input').value.trim();
+      const err = document.getElementById('error-msg');
+      if (raw.replace(/\s+/g, '').length < 5) {
+        err.style.display = 'block';
+        return;
+      }
+      err.style.display = 'none';
+      const res = analyze(raw);
+
+      const grade = res.total >= 90 ? 'S · 완벽한 앱 기획 마스터' : res.total >= 80 ? 'A · 아주 우수한 기획 구조' : res.total >= 70 ? 'B · 탄탄한 기본기 달성' : 'C · 든든한 기획 출발';
+      const ringColor = res.total >= 80 ? '#65A30D' : '#EA580C';
+      const radius = 56;
+      const circ = 2 * Math.PI * radius;
+      const offset = circ - (res.total / 100) * circ;
+
+      document.getElementById('result-section').innerHTML = `
+        <div class="card">
+          <div class="overview-grid">
+            <div class="gauge-box">
+              <svg width="140" height="140" viewBox="0 0 140 140" style="transform:rotate(-90deg);flex-shrink:0;">
+                <circle cx="70" cy="70" r="${radius}" fill="none" stroke="#ECF3DF" stroke-width="11" />
+                <circle cx="70" cy="70" r="${radius}" fill="none" stroke="${ringColor}" stroke-width="11" stroke-linecap="round" stroke-dasharray="${circ}" stroke-dashoffset="${offset}" />
+              </svg>
+              <div>
+                <div style="font-size:12px;color:var(--lime-dark);font-weight:700;">등급 ${grade}</div>
+                <div class="mono" style="font-size:36px;font-weight:700;line-height:1.2;">${res.total}<span style="font-size:16px;color:var(--ink-muted);font-weight:500;"> / 100점</span></div>
+                <p style="margin:6px 0 0;font-size:13px;color:var(--ink-secondary);">역할·목표·디자인·구조 체계화 분석 결과입니다.</p>
+              </div>
+            </div>
+            <div>
+              <div class="bars-grid">
+                ${res.criteria.map((c) => {
+                  const color = c.score >= 21 ? '#65A30D' : c.score >= 17 ? '#EA580C' : '#F59E0B';
+                  const status = c.score >= 21 ? '아주 훌륭함' : c.score >= 17 ? '잘 작성됨' : '더 채워보기';
+                  return `
+                    <div>
+                      <div class="bar-head">
+                        <span><strong>${c.title}</strong> · <span style="color:var(--ink-muted)">${status}</span></span>
+                        <span class="mono"><strong>${c.score}</strong>/${c.max}</span>
+                      </div>
+                      <div class="track"><div class="fill" style="width:${Math.round((c.score/c.max)*100)}%;background:${color};"></div></div>
+                    </div>`;
+                }).join('')}
+              </div>
+              <div class="stats-row">
+                <div><div class="stat-label">공백 제외 글자</div><div class="stat-val mono">${res.stats.charsNoSpace.toLocaleString()}자</div></div>
+                <div><div class="stat-label">분석 문장 수</div><div class="stat-val mono">${res.stats.sentenceCount}문장</div></div>
+                <div><div class="stat-label">구조 기호 · 목록</div><div class="stat-val mono">${res.stats.structCount}개</div></div>
+                <div><div class="stat-label">논리 연결 · 조건</div><div class="stat-val mono">${res.stats.logicCount}회</div></div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+
+      document.getElementById('criteria-section').innerHTML = res.criteria.map((c, idx) => {
+        const color = c.score >= 21 ? '#65A30D' : c.score >= 17 ? '#EA580C' : '#F59E0B';
+        return `
+          <article class="card">
+            <div class="crit-head">
+              <div>
+                <div style="font-size:12px;color:var(--ink-muted);"><span style="color:var(--orange-accent);font-weight:700;">0${idx + 1}</span> · ${c.eng}</div>
+                <h3 style="margin:2px 0 0;font-size:18px;">${c.title}</h3>
+              </div>
+              <div class="mono" style="font-size:22px;font-weight:700;">${c.score}<span style="font-size:13px;color:var(--ink-muted);font-weight:400;">/${c.max}</span></div>
+            </div>
+            ${c.subs.map((s) => `
+              <div class="sub-item">
+                <div class="sub-meta"><span>${s.label}</span><span class="mono">${s.score}/${s.max}점</span></div>
+                <div class="track" style="height:6px;"><div class="fill" style="width:${Math.round((s.score/s.max)*100)}%;background:${color};"></div></div>
+                <div class="evidence">${s.ev.length ? '찾아낸 표현: ' + escapeText(s.ev.join(' · ')) : '관련 표현을 조금 더 적으면 가산점을 받을 수 있어요.'}</div>
+              </div>
+            `).join('')}
+            <div class="example-box"><strong style="color:var(--orange-hover);">작성 예시:</strong> ${escapeText(c.example)}</div>
+          </article>`;
+      }).join('');
+    }
+
+    document.getElementById('prompt-input').addEventListener('input', updateCounter);
+    updateCounter();
+    if (document.getElementById('prompt-input').value.trim().length >= 5) {
+      runEvaluation();
+    } else {
+      renderEmpty();
+    }
+  </script>
+</body>
+</html>
